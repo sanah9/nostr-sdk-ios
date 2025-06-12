@@ -92,7 +92,7 @@ public class Tag: Codable, Equatable, Hashable {
     ///   - value: The content identifier associated with the type. For example, for the
     ///                        pubkey type, the `value` is the 32-byte, hex-encoded pubkey.
     ///   - otherParameters: The remaining parameters in the array of strings the tag consists of.
-    init(name: String, value: String, otherParameters: [String] = []) {
+    public init(name: String, value: String, otherParameters: [String] = []) {
         self.name = name
         self.value = value
         self.otherParameters = otherParameters
@@ -104,7 +104,7 @@ public class Tag: Codable, Equatable, Hashable {
     ///   - value: The content identifier associated with the type. For example, for the
     ///                        pubkey type, the `value` is the 32-byte, hex-encoded pubkey.
     ///   - otherParameters: The remaining parameters in the array of strings the tag consists of.
-    convenience init(name: TagName, value: String, otherParameters: [String] = []) {
+    public convenience init(name: TagName, value: String, otherParameters: [String] = []) {
         self.init(name: name.rawValue, value: value, otherParameters: otherParameters)
     }
 
