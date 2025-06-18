@@ -92,6 +92,41 @@ public class NostrEvent: Codable, Equatable, Hashable, AlternativeSummaryTagInte
         signature = try keypair.privateKey.signatureForContent(id)
     }
 
+    /// Creates a signed ``NostrEvent`` from a rumor (unsigned) event JSON string and a private key.
+    /// - Parameters:
+    ///   - rumorJsonString: The JSON string representation of the rumor event, formatted according to ``NostrEvent`` coding rules.
+    ///   - privkey: The private key used to sign the event.
+    /// - Throws: An error if the JSON cannot be decoded or the event cannot be signed.
+    public required init(rumorJsonString: String, privkey: PrivateKey) throws {
+        // 1. Convert the JSON string to Data
+        guard let jsonData = rumorJsonString.data(using: .utf8) else {
+            throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "Unable to convert rumor JSON string to UTF-8 data."))
+        }
+
+        // 2. Decode it into a rumor event instance
+        let rumor = try JSONDecoder().decode(NostrEvent.self, from: jsonData)
+
+        // 3. Create the keypair from the private key and prepare to sign
+        guard let keypair = Keypair(privateKey: privkey) else {
+            throw NSError(domain: "NostrSDK.Keypair", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to create keypair from private key."])
+        }
+
+        // 4. Copy fields from the rumor event, compute the id, and sign
+        kind = rumor.kind
+        content = rumor.content
+        tags = rumor.tags
+        createdAt = rumor.createdAt
+        pubkey = keypair.publicKey.hex
+
+        id = EventSerializer.identifierForEvent(withPubkey: pubkey,
+                                                createdAt: createdAt,
+                                                kind: kind.rawValue,
+                                                tags: tags,
+                                                content: content)
+
+        signature = try keypair.privateKey.signatureForContent(id)
+    }
+
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
         hasher.combine(pubkey)

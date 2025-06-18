@@ -35,13 +35,7 @@ public extension LegacyDirectMessageEncrypting {
 
         let sharedSecret = try getSharedSecret(privateKey: privateKey, recipient: publicKey)
         
-        let iv = Data.randomBytes(count: 16).bytes
-        let utf8Content = Data(content.utf8).bytes
-        guard let encryptedMessage = AESEncrypt(data: utf8Content, iv: iv, sharedSecret: sharedSecret) else {
-            throw LegacyDirectMessageEncryptingError.encryptionError
-        }
-
-        return encodeDMBase64(content: encryptedMessage.bytes, iv: iv)
+        return try legacyDecrypt(payload: content, conversationKey: sharedSecret)
     }
 
     /// Produces a `String` containing `encryptedContent` that has been decrypted using a recipient's `privateKey` and a sender's `publicKey`.
@@ -59,9 +53,45 @@ public extension LegacyDirectMessageEncrypting {
             throw EventCreatingError.invalidInput
         }
 
-        let sections = Array(message.split(separator: "?"))
+        return try legacyDecrypt(payload: message, conversationKey: sharedSecret)
+    }
 
-        if sections.count != 2 {
+    // New: Encrypt/decrypt with pre-computed conversationKey
+    /// Encrypts `content` using a pre-negotiated 32-byte `conversationKey` and returns a legacy DM payload (`ciphertext?iv=<ivBase64>`).
+    /// - Parameters:
+    ///   - content: UTF-8 plaintext to encrypt.
+    ///   - conversationKey: 32-byte shared secret obtained via ECDH.
+    /// - Returns: Base64 payload string.
+    /// - Throws: `LegacyDirectMessageEncryptingError.encryptionError` when encryption fails or the key length is invalid.
+    func legacyEncrypt(content: String, conversationKey: ContiguousBytes) throws -> String {
+        let sharedSecret = conversationKey.bytes
+        guard sharedSecret.count == 32 else {
+            throw LegacyDirectMessageEncryptingError.missingValue
+        }
+
+        let iv = Data.randomBytes(count: 16).bytes
+        let utf8Content = Data(content.utf8).bytes
+        guard let encryptedMessage = AESEncrypt(data: utf8Content, iv: iv, sharedSecret: sharedSecret) else {
+            throw LegacyDirectMessageEncryptingError.encryptionError
+        }
+
+        return encodeDMBase64(content: encryptedMessage.bytes, iv: iv)
+    }
+
+    /// Decrypts a legacy DM payload (`ciphertext?iv=<ivBase64>`) using a pre-negotiated 32-byte `conversationKey`.
+    /// - Parameters:
+    ///   - payload: The payload string to decrypt.
+    ///   - conversationKey: 32-byte shared secret obtained via ECDH.
+    /// - Returns: Decrypted UTF-8 string.
+    /// - Throws: `LegacyDirectMessageEncryptingError.decryptionError` when decryption fails or the key length is invalid.
+    func legacyDecrypt(payload: String, conversationKey: ContiguousBytes) throws -> String {
+        let sharedSecret = conversationKey.bytes
+        guard sharedSecret.count == 32 else {
+            throw LegacyDirectMessageEncryptingError.missingValue
+        }
+
+        let sections = Array(payload.split(separator: "?"))
+        guard sections.count == 2 else {
             throw LegacyDirectMessageEncryptingError.decryptionError
         }
 
@@ -70,11 +100,11 @@ public extension LegacyDirectMessageEncrypting {
             throw LegacyDirectMessageEncryptingError.decryptionError
         }
 
-        guard let ivContent = sections.last else {
+        guard let ivSection = sections.last else {
             throw LegacyDirectMessageEncryptingError.decryptionError
         }
 
-        let ivContentTrimmed = ivContent.dropFirst(3)
+        let ivContentTrimmed = ivSection.dropFirst(3) // remove "iv=" prefix
 
         guard let ivContentData = Data(base64Encoded: String(ivContentTrimmed)),
               let decryptedContentData = AESDecrypt(data: encryptedContentData.bytes, iv: ivContentData.bytes, sharedSecret: sharedSecret),
@@ -85,7 +115,7 @@ public extension LegacyDirectMessageEncrypting {
         return decodedContent
     }
 
-    private func getSharedSecret(privateKey: PrivateKey, recipient pubkey: PublicKey) throws -> [UInt8] {
+    func getSharedSecret(privateKey: PrivateKey, recipient pubkey: PublicKey) throws -> [UInt8] {
         let privateKeyBytes = privateKey.dataRepresentation.bytes
         let publicKeyBytes = preparePublicKeyBytes(from: pubkey)
 
