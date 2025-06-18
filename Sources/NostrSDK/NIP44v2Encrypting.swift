@@ -87,7 +87,7 @@ public extension NIP44v2Encrypting {
     }
 }
 
-extension NIP44v2Encrypting {
+public extension NIP44v2Encrypting {
 
     /// Calculates length of the padded byte array.
     func calculatePaddedLength(_ unpaddedLength: Int) throws -> Int {
@@ -157,7 +157,7 @@ extension NIP44v2Encrypting {
         return result
     }
 
-    func decodePayload(_ payload: String) throws -> DecodedPayload {
+    private func decodePayload(_ payload: String) throws -> DecodedPayload {
         let payloadLength = payload.count
 
         guard payloadLength > 0 && payload.first != "#" else {
@@ -257,7 +257,7 @@ extension NIP44v2Encrypting {
     }
 
     /// Calculates unique per-message key.
-    func messageKeys(conversationKey: ContiguousBytes, nonce: Data) throws -> MessageKeys {
+    private func messageKeys(conversationKey: ContiguousBytes, nonce: Data) throws -> MessageKeys {
         let conversationKeyByteCount = conversationKey.bytes.count
         guard conversationKeyByteCount == 32 else {
             throw NIP44v2EncryptingError.conversationKeyLengthInvalid(conversationKeyByteCount)
