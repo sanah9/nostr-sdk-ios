@@ -97,7 +97,7 @@ public class NostrEvent: Codable, Equatable, Hashable, AlternativeSummaryTagInte
     ///   - rumorJsonString: The JSON string representation of the rumor event, formatted according to ``NostrEvent`` coding rules.
     ///   - privkey: The private key used to sign the event.
     /// - Throws: An error if the JSON cannot be decoded or the event cannot be signed.
-    public required init(rumorJsonString: String, privkey: PrivateKey) throws {
+    public init(rumorJsonString: String, privkey: PrivateKey) throws {
         // 1. Convert the JSON string to Data
         guard let jsonData = rumorJsonString.data(using: .utf8) else {
             throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "Unable to convert rumor JSON string to UTF-8 data."))
