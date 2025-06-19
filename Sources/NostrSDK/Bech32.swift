@@ -13,7 +13,7 @@
 import Foundation
 
 /// Bech32 checksum implementation
-class Bech32 {
+public class Bech32 {
     private static let gen: [UInt32] = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3]
     /// Bech32 checksum delimiter
     private static let checksumMarker: String = "1"
@@ -77,7 +77,7 @@ class Bech32 {
     }
 
     /// Encode Bech32 string
-    static func encode(_ hrp: String, baseFiveData values: Data) -> String {
+    public static func encode(_ hrp: String, baseFiveData values: Data) -> String {
         let checksum = createChecksum(hrp: hrp, values: values)
         var combined = values
         combined.append(checksum)
@@ -90,11 +90,11 @@ class Bech32 {
         return String(data: ret, encoding: .utf8) ?? ""
     }
 
-    static func encode(_ hrp: String, baseEightData: Data) -> String {
+    public static func encode(_ hrp: String, baseEightData: Data) -> String {
         encode(hrp, baseFiveData: baseEightData.base5)
     }
 
-    static func encode(_ hrp: String, hex: String) -> String? {
+    public static func encode(_ hrp: String, hex: String) -> String? {
         guard let decoded = hex.hexDecoded else {
             return nil
         }
@@ -102,7 +102,7 @@ class Bech32 {
     }
 
     /// Decode Bech32 string
-    static func decode(_ str: String) throws -> (hrp: String, checksum: Data) {
+    public static func decode(_ str: String) throws -> (hrp: String, checksum: Data) {
         guard let strBytes = str.data(using: .utf8) else {
             throw DecodingError.nonUTF8String
         }
@@ -157,7 +157,7 @@ class Bech32 {
     }
 }
 
-extension Bech32 {
+public extension Bech32 {
     enum DecodingError: LocalizedError {
         case nonUTF8String
         case nonPrintableCharacter
@@ -170,7 +170,7 @@ extension Bech32 {
         case invalidCharacter
         case checksumMismatch
 
-        var errorDescription: String? {
+        public var errorDescription: String? {
             switch self {
             case .checksumMismatch:
                 return "Checksum doesn't match"
